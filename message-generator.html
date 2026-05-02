@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lazy Sales Closer Message Genie</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0a0a12;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 48px 16px 64px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Background glow orbs */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -180px;
+      left: -180px;
+      width: 520px;
+      height: 520px;
+      background: radial-gradient(circle, rgba(37,211,102,0.13) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -200px;
+      right: -200px;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(99,102,241,0.10) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.97);
+      border-radius: 24px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.06),
+        0 8px 40px rgba(0,0,0,0.45),
+        0 2px 8px rgba(0,0,0,0.3);
+      padding: 44px 40px 40px;
+      width: 100%;
+      max-width: 640px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Coloured top stripe */
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #25D366 0%, #128C7E 50%, #075E54 100%);
+      border-radius: 24px 24px 0 0;
+    }
+
+    .header {
+      margin-bottom: 32px;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+      border: 1px solid #bbf7d0;
+      color: #15803d;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0a0a12;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    .divider {
+      height: 1px;
+      background: #f1f5f9;
+      margin: 28px 0;
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 15px;
+      font-family: inherit;
+      color: #0f172a;
+      background: #f8fafc;
+      outline: none;
+      transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+    }
+
+    input:focus, select:focus {
+      border-color: #25D366;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(37,211,102,0.12);
+    }
+
+    input.error-state, select.error-state {
+      border-color: #f87171;
+      background: #fff5f5;
+    }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath fill='%2394a3b8' d='M6 7L0 0h12z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      background-color: #f8fafc;
+      cursor: pointer;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .error-msg {
+      font-size: 12px;
+      color: #ef4444;
+      margin-top: 5px;
+      display: none;
+      font-weight: 500;
+    }
+
+    .day-preview {
+      margin-top: 7px;
+      font-size: 12px;
+      color: #16a34a;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .generate-btn {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #25D366 0%, #1aab55 100%);
+      color: white;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      letter-spacing: 0.02em;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: opacity 0.18s, transform 0.12s, box-shadow 0.18s;
+      box-shadow: 0 4px 16px rgba(37,211,102,0.35);
+      margin-top: 8px;
+    }
+
+    .generate-btn:hover {
+      opacity: 0.92;
+      box-shadow: 0 6px 20px rgba(37,211,102,0.45);
+    }
+
+    .generate-btn:active { transform: scale(0.985); }
+
+    .output-section {
+      margin-top: 32px;
+      display: none;
+    }
+
+    .output-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .output-header-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      color: #334155;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .copy-btn:hover { background: #e2e8f0; }
+    .copy-btn.copied {
+      background: #dcfce7;
+      color: #15803d;
+      border-color: #bbf7d0;
+    }
+
+    .output-box {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 20px;
+      font-size: 14px;
+      line-height: 1.75;
+      color: #1e293b;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div class="brand-badge">✦ Lazy Sales Closer</div>
+      <h1>Message Genie 🧞</h1>
+      <p class="subtitle">Fill in the details — your message is ready in seconds.</p>
+    </div>
+
+    <div class="field">
+      <label for="consultantInput">Consultant</label>
+      <select id="consultantInput">
+        <option value="Max" selected>Max</option>
+        <option value="Jerlyn">Jerlyn</option>
+        <option value="Shareen">Shareen</option>
+        <option value="Terry">Terry</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="nameInput">Client Name</label>
+      <input type="text" id="nameInput" placeholder="e.g. Sarah or Li Wen" />
+    </div>
+
+    <div class="field">
+      <label for="dateInput">Date</label>
+      <input type="text" id="dateInput" placeholder="e.g. 15 March  or  March 15" />
+      <div class="hint">Day and month only — current year is used automatically.</div>
+      <div class="error-msg" id="dateError">Couldn't recognise that date. Try "15 March" or "March 15".</div>
+      <div class="day-preview" id="dayPreview"></div>
+    </div>
+
+    <div class="field">
+      <label for="timeInput">Time</label>
+      <input type="text" id="timeInput" placeholder="e.g. 3pm  or  930am  or  10:30am" />
+      <div class="hint">12-hour format with am/pm. Colons optional — 930am and 9:30am both work.</div>
+      <div class="error-msg" id="timeError">Couldn't recognise that time. Try "3pm", "930am", or "10:30am".</div>
+    </div>
+
+    <button class="generate-btn" onclick="generate()">✨ Generate Message</button>
+
+    <div class="output-section" id="outputSection">
+      <div class="divider"></div>
+      <div class="output-header">
+        <span class="output-header-label">Your Message</span>
+        <button class="copy-btn" id="copyBtn" onclick="copyMessage()">Copy</button>
+      </div>
+      <div class="output-box" id="outputBox"></div>
+    </div>
+  </div>
+
+  <script>
+    const MONTHS = {
+      jan: 0, january: 0,
+      feb: 1, february: 1,
+      mar: 2, march: 2,
+      apr: 3, april: 3,
+      may: 4,
+      jun: 5, june: 5,
+      jul: 6, july: 6,
+      aug: 7, august: 7,
+      sep: 8, september: 8,
+      oct: 9, october: 9,
+      nov: 10, november: 10,
+      dec: 11, december: 11
+    };
+
+    const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+    function parseDate(raw) {
+      raw = raw.trim().toLowerCase();
+      const patterns = [
+        /^(\d{1,2})\s+([a-z]+)$/,
+        /^([a-z]+)\s+(\d{1,2})$/,
+      ];
+      for (const pat of patterns) {
+        const m = raw.match(pat);
+        if (!m) continue;
+        let day, monthStr;
+        if (/^\d/.test(m[1])) { day = parseInt(m[1]); monthStr = m[2]; }
+        else { monthStr = m[1]; day = parseInt(m[2]); }
+        const monthIdx = MONTHS[monthStr];
+        if (monthIdx === undefined) continue;
+        const year = new Date().getFullYear();
+        const date = new Date(year, monthIdx, day);
+        if (date.getDate() !== day) return null;
+        return date;
+      }
+      return null;
+    }
+
+    function parseTime(raw) {
+      raw = raw.trim().toLowerCase().replace(/\s+/g, '');
+      let hours, mins, period;
+
+      const colonMatch = raw.match(/^(\d{1,2}):(\d{2})([ap]m)$/);
+      const noColonMatch = raw.match(/^(\d{1,4})([ap]m)$/);
+
+      if (colonMatch) {
+        hours = parseInt(colonMatch[1]);
+        mins = parseInt(colonMatch[2]);
+        period = colonMatch[3];
+      } else if (noColonMatch) {
+        const digits = noColonMatch[1];
+        period = noColonMatch[2];
+        if (digits.length <= 2) {
+          hours = parseInt(digits);
+          mins = 0;
+        } else if (digits.length === 3) {
+          hours = parseInt(digits[0]);
+          mins = parseInt(digits.slice(1));
+        } else {
+          hours = parseInt(digits.slice(0, 2));
+          mins = parseInt(digits.slice(2));
+        }
+      } else {
+        return null;
+      }
+
+      if (hours < 1 || hours > 12 || mins < 0 || mins > 59) return null;
+
+      if (period === 'am') {
+        if (hours === 12) hours = 0;
+      } else {
+        if (hours !== 12) hours += 12;
+      }
+
+      const displayHour = hours % 12 === 0 ? 12 : hours % 12;
+      const displayPeriod = hours < 12 ? 'AM' : 'PM';
+      const displayMins = mins === 0 ? '' : `:${String(mins).padStart(2, '0')}`;
+      return `${displayHour}${displayMins}${displayPeriod}`;
+    }
+
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') generate(); });
+    });
+
+    document.getElementById('dateInput').addEventListener('input', function() {
+      const preview = document.getElementById('dayPreview');
+      const err = document.getElementById('dateError');
+      const val = this.value.trim();
+      if (!val) { preview.textContent = ''; err.style.display = 'none'; return; }
+      const d = parseDate(val);
+      if (d) {
+        preview.textContent = `→ ${DAYS[d.getDay()]}, ${d.getDate()} ${d.toLocaleString('en-SG', {month:'long'})} ${d.getFullYear()}`;
+        err.style.display = 'none';
+        this.classList.remove('error-state');
+      } else {
+        preview.textContent = '';
+      }
+    });
+
+    function setError(id, inputId, show) {
+      document.getElementById(id).style.display = show ? 'block' : 'none';
+      const el = document.getElementById(inputId);
+      el.classList.toggle('error-state', show);
+    }
+
+    function generate() {
+      const consultantVal = document.getElementById('consultantInput').value;
+      const nameVal = document.getElementById('nameInput').value.trim()
+        .replace(/\b\w/g, c => c.toUpperCase());
+      const dateVal = document.getElementById('dateInput').value.trim();
+      const timeVal = document.getElementById('timeInput').value.trim();
+
+      let valid = true;
+
+      if (!nameVal) {
+        document.getElementById('nameInput').classList.add('error-state');
+        valid = false;
+      } else {
+        document.getElementById('nameInput').classList.remove('error-state');
+      }
+
+      const parsedDate = parseDate(dateVal);
+      setError('dateError', 'dateInput', !parsedDate);
+      if (!parsedDate) valid = false;
+
+      const parsedTime = parseTime(timeVal);
+      setError('timeError', 'timeInput', !parsedTime);
+      if (!parsedTime) valid = false;
+
+      if (!valid) return;
+
+      const dayName = DAYS[parsedDate.getDay()];
+      const dateStr = `${dayName}, ${parsedDate.getDate()} ${parsedDate.toLocaleString('en-SG', {month:'long'})} ${parsedDate.getFullYear()}, ${parsedTime}`;
+
+      const message = buildMessage(nameVal, dateStr, consultantVal);
+
+      const outputBox = document.getElementById('outputBox');
+      outputBox.textContent = message;
+      document.getElementById('outputSection').style.display = 'block';
+      document.getElementById('copyBtn').textContent = 'Copy';
+      document.getElementById('copyBtn').className = 'copy-btn';
+      outputBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function buildMessage(name, dateTime, consultant) {
+      return `Hey ${name}. ${consultant} here. I've confirmed your timeslot with the team for:
+
+*${dateTime}*
+
+Do bring your physical credit card down so they can charge on the machine for the installments.
+
+⚠️ *Important: make sure the credit card has sufficient credit limit. I advice bringing a few cards down just in case*
+
+Address: 601 MacPherson Rd, #07-08 Grantral Complex, Singapore 368242
+
+congrats once again and I'll see you real soon for our 1st bootcamp session 🥳💪🏻
+
+3 important things to be aware of below:
+
+🗓️ 1. *Here are the list of dates for the Bootcamps* :
+
+https://busy-gladiolus-41f.notion.site/Important-Dates-LSC-Mentorship-27705c97996b8032983ed038f4da61ce
+
+📍2. *Also, please remember to turn up for the Kickoff Masterclass happening on Zoom*
+
+You will learn 2-3 practical strategies you can immediately apply in your meetings… So your prospects will open up to you and lower their guard.
+
+This helps you build positive momentum and progress, before the mentorship even begins.
+
+The details and zoom link can all be found in the link above.
+
+✈️ 3. *Lastly, please show up for your COMPULSORY 1-1 onboarding call*
+
+To ensure you have the highest chance of success in the mentorship to get results…
+
+This onboarding call will give you a quick booster by setting some target milestones for you… and also keep you accountable with some simple sales strategies to apply right away!
+
+Our client success manager will reach out to you personally for this Onboarding call.
+
+Talk soon!`;
+    }
+
+    function copyMessage() {
+      const text = document.getElementById('outputBox').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = '✓ Copied!';
+        btn.className = 'copy-btn copied';
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.className = 'copy-btn';
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
