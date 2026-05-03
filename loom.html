@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loom Transcript</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 48px 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08), 0 4px 24px rgba(0,0,0,.06);
+      width: 100%;
+      max-width: 680px;
+      padding: 40px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .logo h1 { font-size: 20px; font-weight: 700; color: #111; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 6px;
+    }
+
+    input[type="url"] {
+      width: 100%;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 15px;
+      color: #111;
+      transition: border-color .15s;
+      outline: none;
+      background: #fafafa;
+    }
+    input[type="url"]:focus {
+      border-color: #6366f1;
+      background: #fff;
+    }
+
+    .field { margin-bottom: 20px; }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 12px;
+      background: #6366f1;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background .15s, opacity .15s;
+    }
+    button[type="submit"]:hover { background: #4f52d4; }
+    button[type="submit"]:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── progress pipeline ── */
+    #pipeline {
+      display: none;
+      margin-top: 24px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .pipeline-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 14px;
+      color: #666;
+      background: #fafafa;
+    }
+    .pipeline-step:last-child { border-bottom: none; }
+    .pipeline-step.active { background: #fff; color: #111; }
+    .pipeline-step.done   { background: #fff; color: #15803d; }
+    .pipeline-step.error  { background: #fff; color: #dc2626; }
+
+    .step-icon {
+      width: 22px; height: 22px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 14px;
+    }
+    .spinner-sm {
+      width: 16px; height: 16px;
+      border: 2px solid #6366f1;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .step-label { flex: 1; }
+    .step-note  { font-size: 12px; color: #999; }
+
+    /* ── no-transcript fallback ── */
+    #no-transcript-prompt {
+      display: none;
+      margin-top: 20px;
+      background: #fef9c3;
+      border: 1px solid #fde047;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    #no-transcript-prompt p { font-size: 13px; color: #713f12; margin-bottom: 12px; }
+    #manual-transcript {
+      width: 100%;
+      border: 1.5px solid #fde047;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      min-height: 120px;
+      resize: vertical;
+      outline: none;
+      background: #fff;
+    }
+    #manual-transcript:focus { border-color: #ca8a04; }
+    #retry-btn {
+      margin-top: 10px;
+      padding: 9px 18px;
+      background: #854d0e;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    #retry-btn:hover { background: #713f12; }
+    #retry-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── result ── */
+    #result {
+      display: none;
+      margin-top: 28px;
+      border-top: 1px solid #eee;
+      padding-top: 24px;
+    }
+
+    /* action bar pinned at the top of the result */
+    .result-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .result-actions button {
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 7px;
+      cursor: pointer;
+      border: none;
+      transition: background .15s, transform .08s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .result-actions button:active { transform: scale(.97); }
+
+    #copy-btn {
+      background: #f3f4f6;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+    #copy-btn:hover { background: #e5e7eb; }
+
+    #chatgpt-btn {
+      background: #10a37f;
+      color: #fff;
+      flex: 1;
+      justify-content: center;
+    }
+    #chatgpt-btn:hover { background: #0d8f6f; }
+
+    #result h2 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: 14px;
+    }
+    #result-body {
+      font-size: 15px;
+      line-height: 1.75;
+      color: #222;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+
+  <div class="logo">
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="8" fill="#6366f1"/>
+      <path d="M12 10.5v11l9-5.5-9-5.5z" fill="#fff"/>
+    </svg>
+    <h1>Loom Transcript</h1>
+  </div>
+
+  <form id="main-form">
+    <div class="field">
+      <label for="url">Loom video URL</label>
+      <input type="url" id="url" name="url" placeholder="https://www.loom.com/share/…" required />
+    </div>
+    <button type="submit" id="submit-btn">Get transcript</button>
+  </form>
+
+  <!-- progress pipeline -->
+  <div id="pipeline">
+    <div class="pipeline-step" id="step-fetch">
+      <div class="step-icon" id="icon-fetch">○</div>
+      <span class="step-label">Looking for existing transcript</span>
+    </div>
+    <div class="pipeline-step" id="step-download">
+      <div class="step-icon" id="icon-download">○</div>
+      <span class="step-label">Downloading audio</span>
+      <span class="step-note" id="note-download"></span>
+    </div>
+    <div class="pipeline-step" id="step-transcribe">
+      <div class="step-icon" id="icon-transcribe">○</div>
+      <span class="step-label">Transcribing with Whisper</span>
+      <span class="step-note" id="note-transcribe"></span>
+    </div>
+  </div>
+
+  <!-- manual paste fallback -->
+  <div id="no-transcript-prompt">
+    <p id="no-transcript-reason">⚠️ Automatic transcription failed. Paste the transcript manually to continue.</p>
+    <textarea id="manual-transcript" placeholder="Paste the transcript here…"></textarea>
+    <button id="retry-btn">Continue with pasted transcript</button>
+  </div>
+
+  <!-- result -->
+  <div id="result">
+    <div class="result-actions">
+      <button id="copy-btn" onclick="copyOnly()">Copy</button>
+      <button id="chatgpt-btn" onclick="openInChatGPT()">
+        Copy &amp; open in ChatGPT ↗
+      </button>
+    </div>
+    <h2>Transcript</h2>
+    <div id="result-body"></div>
+  </div>
+
+</div>
+
+<script>
+  const CHATGPT_URL = 'https://chatgpt.com/g/g-68c5380cbe248191ae8e411ca00598e4-max-s-cold-call-gatekeeper';
+
+  const form       = document.getElementById('main-form');
+  const submitBtn  = document.getElementById('submit-btn');
+  const pipeline   = document.getElementById('pipeline');
+  const noTxPrompt = document.getElementById('no-transcript-prompt');
+  const manualTx   = document.getElementById('manual-transcript');
+  const retryBtn   = document.getElementById('retry-btn');
+  const resultEl   = document.getElementById('result');
+  const resultBody = document.getElementById('result-body');
+
+  // pipeline step helpers
+  const STEPS = ['fetch', 'download', 'transcribe'];
+
+  function stepEl(id)   { return document.getElementById('step-' + id); }
+  function iconEl(id)   { return document.getElementById('icon-' + id); }
+  function noteEl(id)   { return document.getElementById('note-' + id); }
+
+  function setStep(id, state, note) {
+    const step = stepEl(id);
+    const icon = iconEl(id);
+    const noteSpan = noteEl(id);
+    step.className = 'pipeline-step ' + state;
+    if (state === 'active') {
+      icon.innerHTML = '<div class="spinner-sm"></div>';
+    } else if (state === 'done') {
+      icon.textContent = '✓';
+    } else if (state === 'error') {
+      icon.textContent = '✗';
+    } else {
+      icon.textContent = '○';
+    }
+    if (noteSpan && note !== undefined) noteSpan.textContent = note;
+  }
+
+  function resetPipeline() {
+    STEPS.forEach(id => setStep(id, ''));
+    pipeline.style.display = 'none';
+  }
+
+  function handleStatus(msg) {
+    const s = msg.toLowerCase();
+    if (s.includes('looking') || s.includes('existing transcript')) {
+      pipeline.style.display = 'block';
+      setStep('fetch', 'active');
+    } else if (s.includes('no transcript') || s.includes('generating one')) {
+      setStep('fetch', 'done');
+    } else if (s.includes('downloading')) {
+      setStep('download', 'active');
+    } else if (s.includes('transcribing')) {
+      setStep('download', 'done');
+      setStep('transcribe', 'active', '(may take a minute for long videos)');
+    } else if (s.includes('transcript ready')) {
+      setStep('fetch', 'done');
+      setStep('download', 'done');
+      setStep('transcribe', 'done');
+    }
+  }
+
+  function startStream(formData) {
+    resetPipeline();
+    noTxPrompt.style.display = 'none';
+    resultEl.style.display = 'none';
+    resultBody.textContent = '';
+    submitBtn.disabled = true;
+    retryBtn.disabled = true;
+
+    const params = new URLSearchParams(formData);
+    let buffer = '';
+
+    fetch('/summarize', { method: 'POST', body: params })
+      .then(resp => {
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+
+        function read() {
+          reader.read().then(({ done, value }) => {
+            if (done) { unlock(); return; }
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue;
+              let msg;
+              try { msg = JSON.parse(line.slice(6)); } catch { continue; }
+
+              if (msg.error) {
+                STEPS.forEach(id => {
+                  if (stepEl(id).classList.contains('active')) setStep(id, 'error');
+                });
+                document.getElementById('no-transcript-reason').textContent = '⚠️ Error: ' + msg.error;
+                noTxPrompt.style.display = 'block';
+                unlock(); return;
+              }
+
+              if (msg.no_transcript) {
+                const reason = msg.reason || 'Automatic transcription failed.';
+                document.getElementById('no-transcript-reason').textContent =
+                  '⚠️ ' + reason + ' You can paste the transcript manually below.';
+                STEPS.forEach(id => {
+                  if (stepEl(id).classList.contains('active')) setStep(id, 'error');
+                });
+                noTxPrompt.style.display = 'block';
+                unlock(); return;
+              }
+
+              if (msg.status) handleStatus(msg.status);
+
+              if (msg.transcript) {
+                STEPS.forEach(id => setStep(id, 'done'));
+                resultBody.textContent = msg.transcript;
+                resultEl.style.display = 'block';
+              }
+
+              if (msg.done) unlock();
+            }
+            read();
+          });
+        }
+        read();
+      })
+      .catch(err => {
+        document.getElementById('no-transcript-reason').textContent = '⚠️ Network error: ' + err.message;
+        noTxPrompt.style.display = 'block';
+        unlock();
+      });
+  }
+
+  function unlock() {
+    submitBtn.disabled = false;
+    retryBtn.disabled = false;
+  }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    fd.delete('transcript');
+    startStream(fd);
+  });
+
+  retryBtn.addEventListener('click', () => {
+    const tx = manualTx.value.trim();
+    if (!tx) { alert('Please paste a transcript first.'); return; }
+    const fd = new FormData(form);
+    fd.set('transcript', tx);
+    startStream(fd);
+  });
+
+  function copyOnly() {
+    navigator.clipboard.writeText(resultBody.textContent).then(() => {
+      const btn = document.getElementById('copy-btn');
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 1500);
+    });
+  }
+
+  function openInChatGPT() {
+    const btn = document.getElementById('chatgpt-btn');
+    navigator.clipboard.writeText(resultBody.textContent).then(() => {
+      btn.textContent = 'Copied — press ⌘V to paste ↗';
+      window.open(CHATGPT_URL, '_blank');
+      setTimeout(() => btn.textContent = 'Copy & open in ChatGPT ↗', 3000);
+    });
+  }
+</script>
+</body>
+</html>
